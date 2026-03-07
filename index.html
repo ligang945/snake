@@ -112,20 +112,6 @@
             margin-bottom: 20px;
         }
 
-        .instructions {
-            color: #888;
-            margin-top: 15px;
-            font-size: 0.9em;
-        }
-
-        .instructions span {
-            color: #4ecca3;
-            background: rgba(78, 204, 163, 0.2);
-            padding: 2px 8px;
-            border-radius: 5px;
-            margin: 0 3px;
-        }
-
         .mobile-controls {
             display: none;
             margin-top: 20px;
@@ -172,26 +158,6 @@
             }
         }
 
-        .speed-control {
-            margin-top: 15px;
-            color: #fff;
-        }
-
-        .speed-control label {
-            margin-right: 10px;
-        }
-
-        .speed-control select {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            border: 1px solid #4ecca3;
-            padding: 5px 10px;
-            border-radius: 5px;
-        }
-
-        .speed-control select option {
-            background: #1a1a2e;
-        }
     </style>
 </head>
 <body>
@@ -217,20 +183,6 @@
             <button class="btn" id="soundBtn" onclick="toggleSound()">🔊 音效</button>
         </div>
 
-        <div class="speed-control">
-            <label for="speedSelect">难度:</label>
-            <select id="speedSelect">
-                <option value="300">简单</option>
-                <option value="200" selected>中等</option>
-                <option value="140">困难</option>
-                <option value="100">极限</option>
-            </select>
-        </div>
-
-        <div class="instructions">
-            使用 <span>↑</span> <span>↓</span> <span>←</span> <span>→</span> 或 <span>W</span> <span>S</span> <span>A</span> <span>D</span> 控制方向，支持手柄操作
-        </div>
-
         <div class="mobile-controls">
             <div class="row">
                 <button class="mobile-btn" onclick="changeDirection('up')">↑</button>
@@ -251,10 +203,8 @@
         const finalScoreElement = document.getElementById('finalScore');
         const gameOverScreen = document.getElementById('gameOver');
         const startBtn = document.getElementById('startBtn');
-        const speedSelect = document.getElementById('speedSelect');
-
         // 游戏配置
-        const tileCount = 20;
+        const tileCount = 30;
         let gridSize = canvas.width / tileCount;
 
         let snake = [];
@@ -267,6 +217,7 @@
         let isPaused = false;
         let isGameRunning = false;
         let currentSpeed = 100;
+        let directionChanged = false; // 标记本 tick 是否已改变过方向
 
         // ========== 音效系统 ==========
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -363,6 +314,7 @@
             // 初始方向
             dx = 1;
             dy = 0;
+            directionChanged = false;
 
             // 重置分数
             score = 0;
@@ -375,14 +327,49 @@
             gameOverScreen.style.display = 'none';
         }
 
-        // 生成食物
+        // 生成食物 - 根据难度调整边缘/中心出现概率
         function generateFood() {
+            // 计算难度：分数越高，食物出现在边缘的概率越大
+            // 边缘概率从0%逐渐增加到最高70%
+            const edgeProbability = Math.min(score / 200, 0.7);
+            const useEdge = Math.random() < edgeProbability;
+
+            // 定义中心区域（中间1/3区域）和边缘区域
+            const centerStart = Math.floor(tileCount / 3);
+            const centerEnd = Math.floor(2 * tileCount / 3);
+
             do {
-                food = {
-                    x: Math.floor(Math.random() * tileCount),
-                    y: Math.floor(Math.random() * tileCount)
-                };
+                if (useEdge) {
+                    // 生成边缘位置（中心区域外）
+                    food = generateEdgePosition(centerStart, centerEnd);
+                } else {
+                    // 生成中心位置
+                    food = {
+                        x: centerStart + Math.floor(Math.random() * (centerEnd - centerStart)),
+                        y: centerStart + Math.floor(Math.random() * (centerEnd - centerStart))
+                    };
+                }
             } while (isSnakeAt(food.x, food.y));
+        }
+
+        // 生成边缘位置（不在中心区域）
+        function generateEdgePosition(centerStart, centerEnd) {
+            const edgeRegions = [
+                // 左边区域
+                { xMin: 0, xMax: centerStart, yMin: 0, yMax: tileCount },
+                // 右边区域
+                { xMin: centerEnd, xMax: tileCount, yMin: 0, yMax: tileCount },
+                // 上边区域（中间部分已被左右覆盖，这里只需要角落）
+                { xMin: centerStart, xMax: centerEnd, yMin: 0, yMax: centerStart },
+                // 下边区域
+                { xMin: centerStart, xMax: centerEnd, yMin: centerEnd, yMax: tileCount }
+            ];
+
+            const region = edgeRegions[Math.floor(Math.random() * edgeRegions.length)];
+            return {
+                x: region.xMin + Math.floor(Math.random() * (region.xMax - region.xMin)),
+                y: region.yMin + Math.floor(Math.random() * (region.yMax - region.yMin))
+            };
         }
 
         // 检查蛇是否在指定位置
@@ -393,6 +380,9 @@
         // 更新游戏
         function update() {
             if (isPaused) return;
+
+            // 重置方向改变标志，允许下一 tick 改变方向
+            directionChanged = false;
 
             // 移动蛇头
             const head = { x: snake[0].x + dx, y: snake[0].y + dy };
@@ -430,6 +420,13 @@
                     localStorage.setItem('snakeHighScore', highScore);
                 }
 
+                // 加速：每吃一个食物速度增加，最低限制为80ms
+                if (currentSpeed > 80) {
+                    currentSpeed = Math.max(80, currentSpeed - 3);
+                    clearInterval(gameLoop);
+                    gameLoop = setInterval(gameStep, currentSpeed);
+                }
+
                 generateFood();
             } else {
                 // 如果没有吃到食物，移除尾部
@@ -465,13 +462,18 @@
 
             snake.forEach((segment, index) => {
                 if (index === 0) {
-                    // 蛇头
+                    // 蛇头保持高亮颜色
                     ctx.fillStyle = '#4ecca3';
                     ctx.shadowBlur = 10;
                     ctx.shadowColor = '#4ecca3';
                 } else {
-                    // 蛇身
-                    ctx.fillStyle = '#2d8a6f';
+                    // 蛇身颜色渐变：从深绿色到浅绿色
+                    const ratio = (index - 1) / Math.max(snake.length - 2, 1);
+                    // 深绿色 (35, 110, 90) 到 浅绿色 (90, 180, 150)
+                    const r = Math.round(35 + ratio * 55);
+                    const g = Math.round(110 + ratio * 70);
+                    const b = Math.round(90 + ratio * 60);
+                    ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
                     ctx.shadowBlur = 0;
                 }
 
@@ -635,7 +637,7 @@
             }
 
             setupCanvas();
-            currentSpeed = parseInt(speedSelect.value);
+            currentSpeed = 500; // 初始速度（毫秒），较慢的开始
             isPaused = false;
             isGameRunning = true;
             startBtn.textContent = '重新开始';
@@ -671,19 +673,20 @@
         // 改变方向
         function changeDirection(direction) {
             if (!isGameRunning || isPaused) return;
+            if (directionChanged) return;
 
             switch (direction) {
                 case 'up':
-                    if (dy === 0) { dx = 0; dy = -1; }
+                    if (dy === 0) { dx = 0; dy = -1; directionChanged = true; }
                     break;
                 case 'down':
-                    if (dy === 0) { dx = 0; dy = 1; }
+                    if (dy === 0) { dx = 0; dy = 1; directionChanged = true; }
                     break;
                 case 'left':
-                    if (dx === 0) { dx = -1; dy = 0; }
+                    if (dx === 0) { dx = -1; dy = 0; directionChanged = true; }
                     break;
                 case 'right':
-                    if (dx === 0) { dx = 1; dy = 0; }
+                    if (dx === 0) { dx = 1; dy = 0; directionChanged = true; }
                     break;
             }
         }
@@ -721,15 +724,6 @@
                     e.preventDefault();
                     pauseGame();
                     break;
-            }
-        });
-
-        // 速度改变
-        speedSelect.addEventListener('change', () => {
-            if (isGameRunning) {
-                currentSpeed = parseInt(speedSelect.value);
-                clearInterval(gameLoop);
-                gameLoop = setInterval(gameStep, currentSpeed);
             }
         });
 
