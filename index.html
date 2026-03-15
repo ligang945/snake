@@ -5,39 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>贪吃蛇游戏</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html, body {
-            width: 100%;
-            height: 100%;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             font-family: Arial, sans-serif;
-            overflow: hidden;
         }
 
-        /* 整体容器：垂直排列，宽度由内容决定，整体居中 */
+        /* 左侧：标题 + canvas，水平居中 */
         .game-container {
+            position: relative;
             display: flex;
             flex-direction: column;
-            height: 90vh;
+            align-items: center;
+            gap: 8px;
         }
 
-        /* 顶部标题：居中 */
+        /* 左上：标题 */
         .game-header {
-            padding: 0 0 8px 0;
+            width: 100%;
             text-align: center;
-            flex-shrink: 0;
         }
 
         h1 {
@@ -46,21 +37,11 @@
             text-shadow: 0 0 10px rgba(78, 204, 163, 0.5);
         }
 
-        /* 游戏区域：左右布局，占满剩余高度，水平居中 */
-        .game-area {
-            display: flex;
-            flex-direction: row;
-            flex: 1;
-            min-height: 0;
-            gap: 16px;
-            justify-content: center;
-        }
-
-        /* 左侧：canvas 容器，保持正方形 */
+        /* 左下：canvas 正方形 */
         .canvas-wrapper {
             position: relative;
-            height: 100%;
-            aspect-ratio: 1 / 1;
+            width: min(82vh, 70vw);
+            height: min(82vh, 70vw);
             flex-shrink: 0;
         }
 
@@ -74,81 +55,53 @@
             background: #0a0a0a;
         }
 
-        /* 右侧面板：垂直排列，自动填满剩余宽度 */
+        /* 右侧面板：绝对定位，吸附在 canvas-wrapper 右边，顶部与 canvas 顶部对齐 */
         .side-panel {
-            flex: 1;
+            position: absolute;
+            left: calc(100% + 16px);
+            width: 200px;
+            height: min(82vh, 70vw);
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            min-width: 0;
-            max-width: 240px;
+            gap: 10px;
         }
 
-        /* 得分卡片 */
         .score-card {
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(78, 204, 163, 0.3);
             border-radius: 10px;
-            padding: 12px 16px;
+            padding: 10px 14px;
             color: #fff;
             text-align: center;
             flex-shrink: 0;
         }
 
-        .score-card .label {
-            font-size: 0.8em;
-            color: #aaa;
-            margin-bottom: 4px;
-        }
+        .score-card .label { font-size: 0.78em; color: #aaa; margin-bottom: 3px; }
+        .score-card .value { font-size: clamp(1.3em, 1.8vw, 1.8em); font-weight: bold; color: #4ecca3; }
 
-        .score-card .value {
-            font-size: clamp(1.4em, 2vw, 2em);
-            font-weight: bold;
-            color: #4ecca3;
-        }
-
-        /* 操作说明 */
         .instructions {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(78, 204, 163, 0.2);
             border-radius: 10px;
-            padding: 12px 16px;
+            padding: 10px 14px;
             color: #ccc;
-            font-size: clamp(0.72em, 1vw, 0.88em);
+            font-size: clamp(0.7em, 0.9vw, 0.85em);
             flex: 1;
             overflow: hidden;
         }
 
-        .instructions .inst-title {
-            color: #4ecca3;
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
+        .instructions .inst-title { color: #4ecca3; font-weight: bold; margin-bottom: 6px; }
+        .instructions ul { list-style: none; line-height: 1.8; }
+        .instructions ul li::before { content: '▸ '; color: #4ecca3; }
 
-        .instructions ul {
-            list-style: none;
-            line-height: 1.9;
-        }
-
-        .instructions ul li::before {
-            content: '▸ ';
-            color: #4ecca3;
-        }
-
-        /* 按钮区域 */
-        .controls {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            flex-shrink: 0;
-        }
+        .controls { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
 
         .btn {
             background: #4ecca3;
             color: #1a1a2e;
             border: none;
-            padding: 10px 16px;
-            font-size: clamp(0.8em, 1vw, 1em);
+            padding: 8px 14px;
+            font-size: clamp(0.75em, 0.9vw, 0.95em);
             border-radius: 25px;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -159,11 +112,9 @@
         .btn:hover { background: #3db892; transform: scale(1.05); }
         .btn:active { transform: scale(0.95); }
 
-        /* 游戏结束遮罩 */
         .game-over {
             position: absolute;
-            top: 50%;
-            left: 50%;
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             background: rgba(0, 0, 0, 0.9);
             padding: 30px 50px;
@@ -178,56 +129,31 @@
         .game-over p { color: #fff; font-size: 1.2em; margin-bottom: 20px; }
         .game-over .btn { width: auto; padding: 12px 30px; }
 
-        /* 移动端方向键 */
         .mobile-controls { display: none; flex-shrink: 0; }
-
-        .mobile-controls .row {
-            display: flex;
-            justify-content: center;
-            margin: 3px 0;
-        }
-
+        .mobile-controls .row { display: flex; justify-content: center; margin: 3px 0; }
         .mobile-btn {
-            width: 50px;
-            height: 50px;
+            width: 50px; height: 50px;
             background: rgba(78, 204, 163, 0.3);
             border: 2px solid #4ecca3;
             border-radius: 10px;
-            color: #4ecca3;
-            font-size: 1.3em;
-            margin: 3px;
-            cursor: pointer;
-            transition: all 0.2s;
+            color: #4ecca3; font-size: 1.3em; margin: 3px;
+            cursor: pointer; transition: all 0.2s;
         }
-
         .mobile-btn:active { background: #4ecca3; color: #1a1a2e; }
 
-        /* 窄屏适配 */
-        @media (max-width: 600px) {
-            body { overflow: auto; }
+        /* 窄屏：右侧面板回到文档流，单列布局 */
+        @media (max-width: 700px) {
+            body { align-items: flex-start; padding: 16px; }
 
-            .game-container {
-                height: auto;
-                width: 90vw;
-            }
-
-            .game-area {
-                flex-direction: column;
-                align-items: center;
-                height: auto;
-            }
-
-            .canvas-wrapper {
-                width: 100%;
-                height: auto;
-                aspect-ratio: 1 / 1;
-            }
+            .canvas-wrapper { width: 90vw; height: 90vw; }
 
             .side-panel {
-                width: 100%;
-                max-width: none;
+                position: static;
+                width: 90vw;
+                height: auto;
                 flex-direction: row;
                 flex-wrap: wrap;
+                margin-top: 12px;
             }
 
             .score-card { flex: 1; min-width: 120px; }
@@ -239,17 +165,14 @@
 </head>
 <body>
     <div class="game-container">
-    <!-- 顶部标题 -->
-    <div class="game-header">
-        <h1>🐍 贪吃蛇</h1>
-    </div>
+        <!-- 左上：标题 -->
+        <div class="game-header">
+            <h1>🐍 贪吃蛇</h1>
+        </div>
 
-    <!-- 游戏区域：左右布局 -->
-    <div class="game-area">
-        <!-- 左侧：游戏画布 -->
+        <!-- 左下：游戏画布 -->
         <div class="canvas-wrapper">
             <canvas id="gameCanvas" width="600" height="600"></canvas>
-
             <div class="game-over" id="gameOver">
                 <h2>游戏结束!</h2>
                 <p>最终得分: <span id="finalScore">0</span></p>
@@ -257,21 +180,16 @@
             </div>
         </div>
 
-        <!-- 右侧面板 -->
+        <!-- 右下：得分/说明/按钮 -->
         <div class="side-panel">
-            <!-- 当前得分 -->
             <div class="score-card">
                 <div class="label">当前得分</div>
                 <div class="value" id="score">0</div>
             </div>
-
-            <!-- 最高得分 -->
             <div class="score-card">
                 <div class="label">最高得分</div>
                 <div class="value" id="highScore">0</div>
             </div>
-
-            <!-- 操作说明 -->
             <div class="instructions">
                 <div class="inst-title">操作说明</div>
                 <ul>
@@ -282,15 +200,11 @@
                     <li>撞墙/撞身结束</li>
                 </ul>
             </div>
-
-            <!-- 按钮 -->
             <div class="controls">
                 <button class="btn" id="startBtn" onclick="startGame()">开始游戏</button>
                 <button class="btn" onclick="pauseGame()">暂停</button>
                 <button class="btn" id="soundBtn" onclick="toggleSound()">🔊 音效</button>
             </div>
-
-            <!-- 移动端方向键 -->
             <div class="mobile-controls">
                 <div class="row">
                     <button class="mobile-btn" onclick="changeDirection('up')">↑</button>
@@ -302,7 +216,6 @@
                 </div>
             </div>
         </div>
-    </div>
     </div>
 
     <script>
@@ -421,6 +334,13 @@
             canvas.height = rect.height * dpr;
             ctx.scale(dpr, dpr);
             gridSize = rect.width / tileCount;
+
+            // 让 side-panel 顶部与 canvas 顶部对齐
+            const canvasWrapper = document.querySelector('.canvas-wrapper');
+            const sidePanel = document.querySelector('.side-panel');
+            const containerRect = document.querySelector('.game-container').getBoundingClientRect();
+            const wrapperRect = canvasWrapper.getBoundingClientRect();
+            sidePanel.style.top = (wrapperRect.top - containerRect.top) + 'px';
         }
 
         // 初始化游戏
@@ -867,10 +787,8 @@
 
         // 窗口大小变化时重新调整画布
         window.addEventListener('resize', () => {
-            if (isGameRunning) {
-                setupCanvas();
-                draw();
-            }
+            setupCanvas();
+            if (isGameRunning) draw();
         });
 
         // ========== 手柄支持 ==========
