@@ -241,6 +241,7 @@
         let isGameRunning = false;
         let currentSpeed = 100;
         let directionChanged = false; // 标记本 tick 是否已改变过方向
+        let pendingScoreRumble = false; // 标记下一帧绘制时触发得分震动
 
         // ========== 音效系统 ==========
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -453,8 +454,8 @@
 
                 // 播放得分音效
                 playScoreSound();
-                // 手柄震动：吃到食物
-                rumble(0.3, 0.6, 150);
+                // 标记下一帧绘制时触发震动（与视觉同步）
+                pendingScoreRumble = true;
 
                 // 更新最高分
                 if (score > highScore) {
@@ -479,6 +480,12 @@
 
         // 绘制游戏
         function draw() {
+            // 得分震动与绘制同步
+            if (pendingScoreRumble) {
+                pendingScoreRumble = false;
+                rumble(0.3, 0.6, 150);
+            }
+
             // 清空画布
             ctx.fillStyle = '#0a0a0a';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
