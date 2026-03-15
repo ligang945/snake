@@ -11,83 +11,155 @@
             box-sizing: border-box;
         }
 
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+
         body {
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            height: 100vh;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             font-family: Arial, sans-serif;
+            overflow: hidden;
         }
 
+        /* 整体容器：垂直排列，宽度由内容决定，整体居中 */
         .game-container {
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+        }
+
+        /* 顶部标题：居中 */
+        .game-header {
+            padding: 0 0 8px 0;
             text-align: center;
+            flex-shrink: 0;
         }
 
         h1 {
             color: #4ecca3;
-            margin-bottom: 10px;
-            font-size: 2.5em;
+            font-size: clamp(1.2em, 2.5vw, 2.2em);
             text-shadow: 0 0 10px rgba(78, 204, 163, 0.5);
         }
 
-        .score-board {
+        /* 游戏区域：左右布局，占满剩余高度，水平居中 */
+        .game-area {
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            color: #fff;
-            font-size: 1.2em;
+            flex-direction: row;
+            flex: 1;
+            min-height: 0;
+            gap: 16px;
+            justify-content: center;
         }
 
-        .score, .high-score {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 10px 20px;
-            border-radius: 10px;
-        }
-
-        .score span, .high-score span {
-            color: #4ecca3;
-            font-weight: bold;
+        /* 左侧：canvas 容器，保持正方形 */
+        .canvas-wrapper {
+            position: relative;
+            height: 100%;
+            aspect-ratio: 1 / 1;
+            flex-shrink: 0;
         }
 
         canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
             border: 3px solid #4ecca3;
             border-radius: 10px;
             box-shadow: 0 0 20px rgba(78, 204, 163, 0.3);
             background: #0a0a0a;
-            max-width: min(90vw, 90vh);
-            max-height: min(90vw, 90vh);
-            width: 900px;
-            height: 900px;
         }
 
-        .controls {
-            margin-top: 20px;
+        /* 右侧面板：垂直排列，自动填满剩余宽度 */
+        .side-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-width: 0;
+            max-width: 240px;
+        }
+
+        /* 得分卡片 */
+        .score-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(78, 204, 163, 0.3);
+            border-radius: 10px;
+            padding: 12px 16px;
             color: #fff;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .score-card .label {
+            font-size: 0.8em;
+            color: #aaa;
+            margin-bottom: 4px;
+        }
+
+        .score-card .value {
+            font-size: clamp(1.4em, 2vw, 2em);
+            font-weight: bold;
+            color: #4ecca3;
+        }
+
+        /* 操作说明 */
+        .instructions {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(78, 204, 163, 0.2);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: #ccc;
+            font-size: clamp(0.72em, 1vw, 0.88em);
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .instructions .inst-title {
+            color: #4ecca3;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .instructions ul {
+            list-style: none;
+            line-height: 1.9;
+        }
+
+        .instructions ul li::before {
+            content: '▸ ';
+            color: #4ecca3;
+        }
+
+        /* 按钮区域 */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-shrink: 0;
         }
 
         .btn {
             background: #4ecca3;
             color: #1a1a2e;
             border: none;
-            padding: 12px 30px;
-            font-size: 1.1em;
+            padding: 10px 16px;
+            font-size: clamp(0.8em, 1vw, 1em);
             border-radius: 25px;
             cursor: pointer;
-            margin: 5px;
             transition: all 0.3s ease;
             font-weight: bold;
+            width: 100%;
         }
 
-        .btn:hover {
-            background: #3db892;
-            transform: scale(1.05);
-        }
+        .btn:hover { background: #3db892; transform: scale(1.05); }
+        .btn:active { transform: scale(0.95); }
 
-        .btn:active {
-            transform: scale(0.95);
-        }
-
+        /* 游戏结束遮罩 */
         .game-over {
             position: absolute;
             top: 50%;
@@ -98,101 +170,139 @@
             border-radius: 15px;
             border: 2px solid #e74c3c;
             display: none;
+            z-index: 10;
+            text-align: center;
         }
 
-        .game-over h2 {
-            color: #e74c3c;
-            font-size: 2em;
-            margin-bottom: 15px;
-        }
+        .game-over h2 { color: #e74c3c; font-size: 2em; margin-bottom: 15px; }
+        .game-over p { color: #fff; font-size: 1.2em; margin-bottom: 20px; }
+        .game-over .btn { width: auto; padding: 12px 30px; }
 
-        .game-over p {
-            color: #fff;
-            font-size: 1.2em;
-            margin-bottom: 20px;
-        }
-
-        .mobile-controls {
-            display: none;
-            margin-top: 20px;
-        }
+        /* 移动端方向键 */
+        .mobile-controls { display: none; flex-shrink: 0; }
 
         .mobile-controls .row {
             display: flex;
             justify-content: center;
-            margin: 5px 0;
+            margin: 3px 0;
         }
 
         .mobile-btn {
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             background: rgba(78, 204, 163, 0.3);
             border: 2px solid #4ecca3;
             border-radius: 10px;
             color: #4ecca3;
-            font-size: 1.5em;
-            margin: 5px;
+            font-size: 1.3em;
+            margin: 3px;
             cursor: pointer;
             transition: all 0.2s;
         }
 
-        .mobile-btn:active {
-            background: #4ecca3;
-            color: #1a1a2e;
-        }
+        .mobile-btn:active { background: #4ecca3; color: #1a1a2e; }
 
+        /* 窄屏适配 */
         @media (max-width: 600px) {
-            canvas {
+            body { overflow: auto; }
+
+            .game-container {
+                height: auto;
                 width: 90vw;
-                height: 90vw;
-                max-width: 400px;
-                max-height: 400px;
             }
 
-            .mobile-controls {
-                display: block;
+            .game-area {
+                flex-direction: column;
+                align-items: center;
+                height: auto;
             }
 
-            h1 {
-                font-size: 1.8em;
+            .canvas-wrapper {
+                width: 100%;
+                height: auto;
+                aspect-ratio: 1 / 1;
             }
+
+            .side-panel {
+                width: 100%;
+                max-width: none;
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+
+            .score-card { flex: 1; min-width: 120px; }
+            .instructions { width: 100%; flex: none; }
+            .controls { flex-direction: row; width: 100%; }
+            .mobile-controls { display: block; width: 100%; }
         }
-
     </style>
 </head>
 <body>
     <div class="game-container">
+    <!-- 顶部标题 -->
+    <div class="game-header">
         <h1>🐍 贪吃蛇</h1>
+    </div>
 
-        <div class="score-board">
-            <div class="score">得分: <span id="score">0</span></div>
-            <div class="high-score">最高分: <span id="highScore">0</span></div>
-        </div>
+    <!-- 游戏区域：左右布局 -->
+    <div class="game-area">
+        <!-- 左侧：游戏画布 -->
+        <div class="canvas-wrapper">
+            <canvas id="gameCanvas" width="600" height="600"></canvas>
 
-        <canvas id="gameCanvas" width="600" height="600"></canvas>
-
-        <div class="game-over" id="gameOver">
-            <h2>游戏结束!</h2>
-            <p>最终得分: <span id="finalScore">0</span></p>
-            <button class="btn" onclick="startGame()">重新开始</button>
-        </div>
-
-        <div class="controls">
-            <button class="btn" id="startBtn" onclick="startGame()">开始游戏</button>
-            <button class="btn" onclick="pauseGame()">暂停</button>
-            <button class="btn" id="soundBtn" onclick="toggleSound()">🔊 音效</button>
-        </div>
-
-        <div class="mobile-controls">
-            <div class="row">
-                <button class="mobile-btn" onclick="changeDirection('up')">↑</button>
-            </div>
-            <div class="row">
-                <button class="mobile-btn" onclick="changeDirection('left')">←</button>
-                <button class="mobile-btn" onclick="changeDirection('down')">↓</button>
-                <button class="mobile-btn" onclick="changeDirection('right')">→</button>
+            <div class="game-over" id="gameOver">
+                <h2>游戏结束!</h2>
+                <p>最终得分: <span id="finalScore">0</span></p>
+                <button class="btn" onclick="startGame()">重新开始</button>
             </div>
         </div>
+
+        <!-- 右侧面板 -->
+        <div class="side-panel">
+            <!-- 当前得分 -->
+            <div class="score-card">
+                <div class="label">当前得分</div>
+                <div class="value" id="score">0</div>
+            </div>
+
+            <!-- 最高得分 -->
+            <div class="score-card">
+                <div class="label">最高得分</div>
+                <div class="value" id="highScore">0</div>
+            </div>
+
+            <!-- 操作说明 -->
+            <div class="instructions">
+                <div class="inst-title">操作说明</div>
+                <ul>
+                    <li>↑↓←→ 或 WASD</li>
+                    <li>空格键 暂停</li>
+                    <li>支持手柄</li>
+                    <li>吃食物加速</li>
+                    <li>撞墙/撞身结束</li>
+                </ul>
+            </div>
+
+            <!-- 按钮 -->
+            <div class="controls">
+                <button class="btn" id="startBtn" onclick="startGame()">开始游戏</button>
+                <button class="btn" onclick="pauseGame()">暂停</button>
+                <button class="btn" id="soundBtn" onclick="toggleSound()">🔊 音效</button>
+            </div>
+
+            <!-- 移动端方向键 -->
+            <div class="mobile-controls">
+                <div class="row">
+                    <button class="mobile-btn" onclick="changeDirection('up')">↑</button>
+                </div>
+                <div class="row">
+                    <button class="mobile-btn" onclick="changeDirection('left')">←</button>
+                    <button class="mobile-btn" onclick="changeDirection('down')">↓</button>
+                    <button class="mobile-btn" onclick="changeDirection('right')">→</button>
+                </div>
+            </div>
+        </div>
+    </div>
     </div>
 
     <script>
@@ -283,6 +393,17 @@
                 btn.textContent = soundEnabled ? '🔊 音效' : '🔇 音效';
                 btn.style.opacity = soundEnabled ? '1' : '0.6';
             }
+        }
+
+        // 手柄震动
+        function rumble(strong, weak, duration) {
+            if (gamepadIndex === null) return;
+            const gp = navigator.getGamepads()[gamepadIndex];
+            gp?.vibrationActuator?.playEffect('dual-rumble', {
+                duration,
+                strongMagnitude: strong,
+                weakMagnitude: weak
+            });
         }
 
         // 初始化
@@ -412,6 +533,8 @@
 
                 // 播放得分音效
                 playScoreSound();
+                // 手柄震动：吃到食物
+                rumble(0.3, 0.6, 150);
 
                 // 更新最高分
                 if (score > highScore) {
@@ -665,6 +788,8 @@
             clearInterval(gameLoop);
             isGameRunning = false;
             playGameOverSound();
+            // 手柄震动：游戏结束
+            rumble(1.0, 0.5, 500);
             finalScoreElement.textContent = score;
             gameOverScreen.style.display = 'block';
             startBtn.textContent = '开始游戏';
